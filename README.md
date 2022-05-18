@@ -75,23 +75,38 @@ Please refer to [TRAINING.md](docs/TRAINING.md) for more details.
 We additionally provide examplery trained weights in the `weights` folder if you would like to directly evaluate. They are trained on Town01, 03, 04, 06. Make sure you are launching CARLA with the `-vulkan` flag.
 
 
-Inside the root LAV repo, run
+运行 `./leaderboard/scripts/run_evaluation.sh` 其中文件可改为此处
 ```bash
 #!/bin/bash
-export CARLA_ROOT=[LINK TO YOUR CARLA FOLDER]
-export LAV=[LINK TO YOUR LAV FOLDER]
+
+#!改这两个地址=====
+export CARLA_ROOT=/home/kin/CARLA
+export LAV=/home/kin/lav
+
 export LEADERBOARD_ROOT=${LAV}/leaderboard
 export SCENARIO_RUNNER_ROOT=${LAV}/scenario_runner
-export PYTHONPATH="${CARLA_ROOT}/PythonAPI/carla/":"${SCENARIO_RUNNER_ROOT}":"${LEADERBOARD_ROOT}"
+export PYTHONPATH=$PYTHONPATH:"${CARLA_ROOT}/PythonAPI/carla/":"${SCENARIO_RUNNER_ROOT}":"${LEADERBOARD_ROOT}":${CARLA_ROOT}/CARLA/PythonAPI/carla/dist/carla-0.9.11-py3.7-linux-x86_64.egg
 export TEAM_AGENT=${LAV}/team_code/lav_agent.py
 export TEAM_CONFIG=${LAV}/team_code/config.yaml
 
 export SCENARIOS=${LEADERBOARD_ROOT}/data/all_towns_traffic_scenarios_public.json
+export ROUTES=${LEADERBOARD_ROOT}/data/routes_devtest.xml
 export REPETITIONS=1
 export CHECKPOINT_ENDPOINT=results.json
 export DEBUG_CHALLENGE=0
 export CHALLENGE_TRACK_CODENAME=SENSORS
-ROUTES=[PATH TO ROUTES] ./leaderboard/scripts/run_evaluation.sh
+
+python3 ${LEADERBOARD_ROOT}/leaderboard/leaderboard_evaluator.py \
+--scenarios=${SCENARIOS}  \
+--routes=${ROUTES} \
+--repetitions=${REPETITIONS} \
+--track=${CHALLENGE_TRACK_CODENAME} \
+--checkpoint=${CHECKPOINT_ENDPOINT} \
+--agent=${TEAM_AGENT} \
+--agent-config=${TEAM_CONFIG} \
+--debug=${DEBUG_CHALLENGE} \
+--record=${RECORD_PATH} \
+--resume=${RESUME}
 ```
 Use `ROUTES=assets/routes_lav_valid.xml` to run our ablation routes, or `ROUTES=leaderboard/data/routes_valid.xml` for the validation routes provided by leaderboard.
 
