@@ -133,3 +133,5 @@ dmypy.json
 # data
 data/
 .vscode/
+
+weights/
