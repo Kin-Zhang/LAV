@@ -113,8 +113,8 @@ class LAV:
         special_cmds = (cmds!=3) # 3对应的是直行
         plan_loss = F.l1_loss(ego_plan_locs, repeat(ego_locs[:,1:], "b t d -> b i c t d", i=self.num_plan_iter, c=self.num_cmds, d=2))
 
-        ego_cast_loss = F.l1_loss(ego_cast_locs.gather(1,repeat(cmds, "b -> b 1 t d",  t=self.num_plan, d=2)).squeeze(1), ego_locs[:,1:])
-        other_cast_losses = F.l1_loss(other_cast_locs, repeat(other_next_locs, "b t d -> b c t d", c=self.num_cmds), reduction="none").mean(dim=[2,3])
+        ego_cast_loss = F.l1_loss(ego_cast_locs.gather(1,repeat(cmds, "b -> b 1 t d",  t=self.num_plan, d=2)).squeeze(1), ego_locs[:,1:]) # 仅留下cmds下的路径进行l1_loss
+        other_cast_losses = F.l1_loss(other_cast_locs, repeat(other_next_locs, "b t d -> b c t d", c=self.num_cmds), reduction="none").mean(dim=[2,3]) #-> [B, cmds]
         other_cast_loss = other_cast_losses.min(1)[0].mean()
 
         cmd_loss = F.binary_cross_entropy(ego_cast_cmds, F.one_hot(cmds, self.num_cmds).float())
