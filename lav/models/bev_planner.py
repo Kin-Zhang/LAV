@@ -79,7 +79,7 @@ class BEVPlanner(nn.Module):
         oris = oris[:,1:]
         typs = (typs[:,1:]==1) # 1 is for vehicles
 
-        N = locs.size(1)
+        N = locs.size(1)# locs shape:[B, N-1, T, 2]; N是max_obj个数 默认为20，去掉了ego
 
         # Only pick the good ones.
         typs = filter_cars(ego_locs, locs, typs)
@@ -119,7 +119,7 @@ class BEVPlanner(nn.Module):
 
             # plt.show()
 
-            other_bev_embd = self.bev_conv_emb(cropped_other_bev)
+            other_bev_embd = self.bev_conv_emb(cropped_other_bev) # resnet -> [35, 512] [num_classes, 512]
 
             other_cast_locs = self.cast(other_bev_embd)
             other_cast_cmds = self.cast_cmd_pred(other_bev_embd)
@@ -211,13 +211,13 @@ class BEVPlanner(nn.Module):
     def cast(self, embd):
         B = embd.size(0)
 
-        u = embd.expand(self.num_plan, B, -1).permute(1,0,2)
+        u = embd.expand(self.num_plan, B, -1).permute(1,0,2)# -> [35,10,512] 多加了一个num_plan维度 复制
 
         locs = []
-        for gru, mlp in zip(self.cast_grus, self.cast_mlps):
+        for gru, mlp in zip(self.cast_grus, self.cast_mlps):# 每一个 cmd都有一个gru 和 mlp
             gru.flatten_parameters()
-            out, _ = gru(u)
-            locs.append(torch.cumsum(mlp(out), dim=1))
+            out, _ = gru(u) # -> [35, 10, 64]
+            locs.append(torch.cumsum(mlp(out), dim=1)) # mlp -> [35,10,2] 把 64->2
 
         return torch.stack(locs, dim=1)
 

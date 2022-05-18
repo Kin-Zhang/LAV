@@ -110,7 +110,7 @@ class LAV:
             ego_locs, locs, oris, nxps, typs,
         )
 
-        special_cmds = (cmds!=3)
+        special_cmds = (cmds!=3) # 3对应的是直行
         plan_loss = F.l1_loss(ego_plan_locs, repeat(ego_locs[:,1:], "b t d -> b i c t d", i=self.num_plan_iter, c=self.num_cmds, d=2))
 
         ego_cast_loss = F.l1_loss(ego_cast_locs.gather(1,repeat(cmds, "b -> b 1 t d",  t=self.num_plan, d=2)).squeeze(1), ego_locs[:,1:])

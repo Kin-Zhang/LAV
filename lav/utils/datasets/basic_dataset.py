@@ -96,7 +96,7 @@ class BasicDataset(Dataset):
     @staticmethod
     def load_bev(lmdb_txn, idx, channels=range(12)):
 
-        bevs = [cv2.imdecode(np.frombuffer(lmdb_txn.get(f'map_{i}_{idx:05d}'.encode()), dtype=np.uint8), cv2.IMREAD_GRAYSCALE) for i in channels]
+        bevs = [cv2.imdecode(np.frombuffer(lmdb_txn.get(f'map_{i}_{idx:05d}'.encode()), dtype=np.uint8), cv2.IMREAD_GRAYSCALE) for i in channels] #channel应该分别代表了一个类别
 
         return np.stack(bevs, axis=-1)
     

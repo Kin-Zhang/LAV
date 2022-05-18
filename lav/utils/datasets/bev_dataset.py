@@ -38,10 +38,10 @@ class BEVDataset(BasicDataset):
         bev = self.__class__.load_bev(lmdb_txn, index, channels=[0,1,2,9,10])
         bev = rotate_image(bev, angle)
         bev = (bev>0).astype(np.uint8).transpose(2,0,1)
-        bev = np.pad(bev, [[0,0],[self.margin,self.margin],[self.margin,self.margin]])
-        bev = bev[:,self.margin:self.margin+320,self.margin+offset:self.margin+offset+320]
+        bev = np.pad(bev, [[0,0],[self.margin,self.margin],[self.margin,self.margin]])# 周边添加上了0
+        bev = bev[:,self.margin:self.margin+320,self.margin+offset:self.margin+offset+320]# 然后又通过offset删掉了，类似于offset里缩了一下
 
-        nxp = self.__class__.access('nxp', lmdb_txn, index, 1).reshape(2)
+        nxp = self.__class__.access('nxp', lmdb_txn, index, 1).reshape(2) # 下一个目标点 本身已经是以车为中心frame下
 
         ego_locs = rotate_points(ego_locs, -angle, ego_locs[0]) + [offset/self.pixels_per_meter, 0]
         nxp      = rotate_points(nxp, -angle, ego_locs[0]) + [offset/self.pixels_per_meter, 0]
@@ -50,26 +50,26 @@ class BEVDataset(BasicDataset):
         bra = int(self.__class__.access('bra', lmdb_txn, index, 1, dtype=np.uint8))
 
         # Overwrite cmd with the additional STOP command.
-        spd = np.mean(np.linalg.norm(ego_locs[1:]-ego_locs[:-1],axis=-1))
-        cmd = self.num_cmds-1 if spd < self.brake_speed else cmd
+        # spd = np.mean(np.linalg.norm(ego_locs[1:]-ego_locs[:-1],axis=-1))
+        # cmd = self.num_cmds-1 if spd < self.brake_speed else cmd # 作者后面在注释掉了: https://github.com/dotchen/LAV/issues/11
 
         locs = rotate_points(locs, -angle, ego_locs[0]) + [offset/self.pixels_per_meter, 0]
         oris[1:] = oris[1:] - np.deg2rad(angle) # Ego vehicle not affected
 
         # Pad tensors
-        num_objs    = min(len(locs), self.max_objs)
+        num_objs    = min(len(locs), self.max_objs) # 如果不够就往上添0，超过就剪掉
         padded_locs = np.zeros((self.max_objs,self.num_plan+1,2), dtype=np.float32)
         padded_oris = np.zeros((self.max_objs,), dtype=np.float32)
         padded_typs = np.zeros((self.max_objs,), dtype=np.int32)
 
-        padded_locs[:num_objs] = locs[:num_objs]
+        padded_locs[:num_objs] = locs[:num_objs] # 但是key里是通过id大小排的，如果这样 max_objs的话 通过距离大小排更好？ TODO
         padded_oris[:num_objs] = oris[:num_objs,0]
         padded_typs[:num_objs] = typs[:num_objs,0]
 
         return (
-            bev,                                             # Segmentation targets
-            -ego_locs, cmd, -nxp, bra,                       # Planning targets
-            -padded_locs, padded_oris, padded_typs, num_objs # Motion forecast targets
+            bev,                                             # Segmentation targets [channle, size, size] -> [5,320,320]
+            -ego_locs, cmd, -nxp, bra,                       # Planning targets [(11,2) ,(1), (1,2), (1)]
+            -padded_locs, padded_oris, padded_typs, num_objs # Motion forecast targets [max_objs, 11, 2], [20], [20], [num_objs]
         )
 
 
@@ -93,8 +93,8 @@ def transform_ego(ego_locs, locs, oris, bbox, typs, ego_ori, T=11):
     
     ego_loc = ego_locs[0]
     
-    keys = sorted(list(locs.keys()))
-    locs = np.array([locs[k] for k in keys]).reshape(-1,T,2)
+    keys = sorted(list(locs.keys())) # locs.keys()是周围的actor id
+    locs = np.array([locs[k] for k in keys]).reshape(-1,T,2) # dict key是id，每个里面包含了T个数据
     oris = np.array([oris[k] for k in keys]).reshape(-1,T)
     bbox = np.array([bbox[k] for k in keys]).reshape(-1,T,2)
     typs = np.array([typs[k] for k in keys]).reshape(-1,T)
