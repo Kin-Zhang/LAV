@@ -135,3 +135,5 @@ data/
 .vscode/
 
 weights/
+
+*.json

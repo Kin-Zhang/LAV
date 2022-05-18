@@ -7,7 +7,7 @@ import torch
 import carla
 import random
 import string
-
+import cv2
 from torch.nn import functional as F
 
 from leaderboard.autoagents.autonomous_agent import AutonomousAgent, Track
@@ -16,7 +16,7 @@ from models.lidar import LiDARModel
 from models.bev_planner import BEVPlanner
 from models.uniplanner import UniPlanner
 from models.rgb import RGBSegmentationModel, RGBBrakePredictionModel
-from pid import PIDController
+from pid import PIDController, visualize_obs
 from point_painting import CoordConverter, point_painting
 from planner import RoutePlanner
 from waypointer import Waypointer
@@ -131,6 +131,15 @@ class LAVAgent(AutonomousAgent):
         self.num_frames = 0
         self.stop_counter = 0
 
+        # Misc
+        W = (self.max_y-self.min_y)*self.pixels_per_meter
+        H = (self.max_x-self.min_x)*self.pixels_per_meter
+        self.bev_center = [
+            W/2 + (self.min_y+self.max_y)/2*self.pixels_per_meter,
+            H/2 + (self.min_x+self.max_x)/2*self.pixels_per_meter
+        ]
+        self.cv_rviz = False # set true if you want to visualize
+
     def destroy(self):
 
         self.waypointer = None
@@ -171,16 +180,18 @@ class LAVAgent(AutonomousAgent):
             return carla.VehicleControl()
 
         rgbs = []
-
+        rviz_rgbs=[]
         for i in range(len(CAMERA_YAWS)):
             _, rgb = input_data.get(f'RGB_{i}')
             rgbs.append(rgb[...,:3][...,::-1])
+            rviz_rgbs.append(rgb[...,:3])
 
         _, tel_rgb = input_data.get('TEL_RGB')
         tel_rgb = tel_rgb[...,:3][...,::-1].copy()
         tel_rgb = tel_rgb[:-self.crop_tel_bottom]
 
         rgb = np.concatenate(rgbs, axis=1)
+        rviz_rgb = np.concatenate(rviz_rgbs, axis=1)
         all_rgb = np.stack(rgbs, axis=0)
 
         if self.waypointer is None:
@@ -212,7 +223,12 @@ class LAVAgent(AutonomousAgent):
         tel_rgbs= torch.tensor(tel_rgb[None]).permute(0,3,1,2).float().to(self.device)
 
         pred_bra = self.bra_model(rgbs, tel_rgbs)
-        pred_sem = to_numpy(torch.softmax(self.seg_model(all_rgbs), dim=1))
+        predict_sem = self.seg_model(all_rgbs)
+        pred_sem = to_numpy(torch.softmax(predict_sem, dim=1))
+        if self.cv_rviz:
+            rviz_sem = to_numpy(predict_sem[0]).argmax(0)
+            for i in range(2):
+                rviz_sem = np.concatenate([rviz_sem, to_numpy(predict_sem[i+1]).argmax(0)], axis=1)
 
         pred_sem = pred_sem[:,1:] * (1-pred_sem[:,:1])
         painted_lidar = point_painting(fused_lidar, pred_sem, self.coord_converters)
@@ -252,6 +268,13 @@ class LAVAgent(AutonomousAgent):
             throt, brake = 0, 1
         if spd * 3.6 > self.max_speed:
             throt = 0
+
+        if self.cv_rviz:
+            vizs = visualize_obs(rviz_rgb, 0, (steer, throt, brake), spd, seg=rviz_sem, bev=pred_bev, dets=det, \
+                                plan=[self.bev_center,ego_plan_locs,other_cast_cmds,other_cast_locs],\
+                                lidar=np.concatenate([fused_lidar, painted_lidar], axis=-1))
+            cv2.imshow('vizs', cv2.cvtColor(vizs, cv2.COLOR_BGR2RGB)) # 
+            cv2.waitKey(100)
 
         del rgbs
         del all_rgbs
