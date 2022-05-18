@@ -1,7 +1,7 @@
 ---
 imagenet_pretrained: True
 log_wandb: True
-wandb_mode: online # [disabled, dryrun, run, disabled, online]
+wandb_mode: disabled # [disabled, dryrun, run, disabled, online]
 fps: 20
 crop_size: 96
 bev_embd_size: 96
@@ -85,4 +85,4 @@ uniplanner_dir: weights/uniplanner_15.th
 bra_model_dir: weights/bra_10.th
 seg_model_dir: weights/seg_1.th
 ### DATASET DIR ###
-data_dir: [PATH TO DATASET]
+data_dir: data/whole_dataset
