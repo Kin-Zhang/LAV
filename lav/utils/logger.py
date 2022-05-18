@@ -27,7 +27,7 @@ class Logger:
         for key, value in config.items():
             setattr(self, key, value)
 
-        wandb.init(project=wandb_project, config=config, entity="wor")
+        wandb.init(project=wandb_project, config=config, entity="wor", mode=self.wandb_mode)
 
     def watch_model(self, model):
         wandb.watch(model, log_freq=100)

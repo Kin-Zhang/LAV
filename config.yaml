@@ -1,6 +1,7 @@
 ---
 imagenet_pretrained: True
 log_wandb: True
+wandb_mode: online # [disabled, dryrun, run, disabled, online]
 fps: 20
 crop_size: 96
 bev_embd_size: 96
