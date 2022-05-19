@@ -3,7 +3,7 @@
 
 原paper: [Learning from all vehicles](http://arxiv.org/abs/2203.11934)
 
-此处仅作为参考对比代码
+此处仅作为参考对比代码，更多讨论见discussion部分！Please click discussion section to discussion on this task.
 
 ## Getting Started
 * To run CARLA and train the models, make sure you are using a machine with **at least** a mid-end GPU.
