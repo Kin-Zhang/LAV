@@ -45,6 +45,9 @@ Make sure you are launching CARLA with the `-vulkan` flag.
 We additionally provide a faster version of our agent that uses `torch.jit` and moves several CPU-heavy computation (point painting etc.) to GPU.
 This code resides in `team_code_v2/lav_agent_fast.py`. It will also logs visualization to the `wandb` cloud which you can optionally view and debug.
 
+![image](https://user-images.githubusercontent.com/10444308/189553598-bc688742-02fe-4e6a-8e92-b64760eadfa9.png)
+
+
 Inside the root LAV repo, run
 ```bash
 ROUTES=[PATH TO ROUTES] ./leaderboard/scripts/run_evaluation.sh
