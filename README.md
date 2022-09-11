@@ -42,13 +42,15 @@ We additionally provide examplery trained weights in the `weights` folder if you
 They are trained on Town01, 03, 04, 06.
 Make sure you are launching CARLA with the `-vulkan` flag.
 
-We additionally provide a faster version of our agent by 
+We additionally provide a faster version of our agent that uses `torch.jit` and moves several CPU-heavy computation (point painting etc.) to GPU.
+This code resides in `team_code_v2/lav_agent_fast.py`. It will also logs visualization to the `wandb` cloud which you can optionally view and debug.
 
 Inside the root LAV repo, run
 ```bash
 ROUTES=[PATH TO ROUTES] ./leaderboard/scripts/run_evaluation.sh
 ```
 Use `ROUTES=assets/routes_lav_valid.xml` to run our ablation routes, or `ROUTES=leaderboard/data/routes_valid.xml` for the validation routes provided by leaderboard.
+You can also try `ROUTES=assets/routes_lav_train.xml` to test on some harder training routes.
 
 ## Dataset
 We also release our LAV dataset. Download the dataset [HERE](https://utexas.box.com/s/evo96v5md4r8nooma3z17kcnfjzp2wed).
